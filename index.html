@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PropWrite AI - Instant Real Estate Listings</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
+    <!-- Header -->
     <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm">
         <div class="max-w-5xl mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold text-blue-600">🏠 PropWrite AI</h1>
@@ -15,8 +17,10 @@
         </div>
     </header>
 
+    <!-- Main Container -->
     <main class="max-w-5xl mx-auto px-6 py-10 flex-grow grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
         
+        <!-- Input Form Card -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
             <div>
                 <h2 class="text-lg font-semibold text-slate-900 mb-4">Property Details</h2>
@@ -66,14 +70,18 @@
             </button>
         </div>
 
+        <!-- Output Cards Section -->
         <div class="space-y-6 flex flex-col justify-center" id="outputSection">
             
+            <!-- Initial Empty State -->
             <div id="placeholderState" class="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-10 text-center flex flex-col items-center justify-center h-full">
                 <span class="text-3xl mb-2">✨</span>
                 <p class="text-slate-500 text-sm">Fill out the property details on the left and click generate to create your professional marketing kit instantly.</p>
             </div>
 
+            <!-- Results Container (Hidden by default) -->
             <div id="resultsContainer" class="hidden space-y-6">
+                <!-- Card 1: MLS Description -->
                 <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="font-semibold text-slate-900 text-sm">MLS / Zillow Description</h3>
@@ -82,6 +90,7 @@
                     <div id="mlsOutput" class="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100 max-h-40 overflow-y-auto"></div>
                 </div>
 
+                <!-- Card 2: Social Media Caption -->
                 <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="font-semibold text-slate-900 text-sm">Social Media Caption (IG / FB)</h3>
@@ -90,6 +99,7 @@
                     <div id="socialOutput" class="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100 max-h-40 overflow-y-auto"></div>
                 </div>
 
+                <!-- Card 3: Email Blast Hook -->
                 <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="font-semibold text-slate-900 text-sm">Buyer Lead Email Pitch</h3>
@@ -102,6 +112,7 @@
         </div>
     </main>
 
+    <!-- Script Logic -->
     <script>
         async function generateListing() {
             const propType = document.getElementById('propType').value;
@@ -138,16 +149,21 @@
             (Write a short, high-converting teaser email pitch to send to buyer leads)`;
 
             try {
-                // REPLACE THE URL BELOW WITH YOUR ACTUAL CLOUDFLARE WORKER URL
+                // Connected to your Cloudflare Worker proxy
                 const workerUrl = "https://realestateai.tashina908.workers.dev";
 
                 const response = await fetch(workerUrl, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.xml ? null : JSON.stringify({ prompt: prompt })
+                    body: JSON.stringify({ prompt: prompt })
                 });
 
                 const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error.message || JSON.stringify(data.error));
+                }
+
                 const rawText = data.candidates[0].content.parts[0].text;
 
                 // Parse the custom split markers
@@ -155,16 +171,16 @@
                 const socialMatch = rawText.match(/---SOCIAL---([\s\S]*?)(?=---EMAIL---|$)/);
                 const emailMatch = rawText.match(/---EMAIL---([\s\S]*)/);
 
-                document.getElementById('mlsOutput').innerText = mlsMatch ? mlsMatch[1].trim() : "Generated text format error.";
-                document.getElementById('socialOutput').innerText = socialMatch ? socialMatch[1].trim() : "Generated text format error.";
-                document.getElementById('emailOutput').innerText = emailMatch ? emailMatch[1].trim() : "Generated text format error.";
+                document.getElementById('mlsOutput').innerText = mlsMatch ? mlsMatch[1].trim() : rawText;
+                document.getElementById('socialOutput').innerText = socialMatch ? socialMatch[1].trim() : "See main description.";
+                document.getElementById('emailOutput').innerText = emailMatch ? emailMatch[1].trim() : "See main description.";
 
                 // Switch UI views
                 document.getElementById('placeholderState').classList.add('hidden');
                 document.getElementById('resultsContainer').classList.remove('hidden');
 
             } catch (err) {
-                alert('Error generating listing. Check your Cloudflare Worker URL or console.');
+                alert('Error generating listing: ' + err.message);
                 console.error(err);
             } finally {
                 btn.disabled = false;
